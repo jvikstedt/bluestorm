@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hello World</title>
+</head>
+<body>
+  <script type="text/javascript">
+    var socket = new WebSocket("ws://localhost:8081");
+
+    socket.onopen = function (event) {
+      socket.send(JSON.stringify({ Greet: { name: 'Bob' } }));
+    };
+
+    socket.onmessage = function (event) {
+      console.log(JSON.parse(event.data));
+    }
+  </script>
+</body>
+</html>
