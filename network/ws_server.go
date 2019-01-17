@@ -41,9 +41,9 @@ func (s *WSServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	wsConn := s.addNewConnection(conn)
 
 	agent := &Agent{
-		ID:        GenerateID(),
-		Conn:      wsConn,
-		Processor: s.Processor,
+		id:        GenerateID(),
+		conn:      wsConn,
+		processor: s.Processor,
 	}
 	if s.OnConnect != nil {
 		s.OnConnect(agent)
