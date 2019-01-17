@@ -2,6 +2,8 @@ package bluestorm
 
 import (
 	"log"
+	"os"
+	"os/signal"
 )
 
 // Server specifies required functions for the server
@@ -28,4 +30,16 @@ func Run(closeSig chan bool, servers Servers) {
 		server.Stop()
 	}
 	log.Println("All servers stopped!")
+}
+
+func CloseOnSignal(sig ...os.Signal) chan bool {
+	closeSig := make(chan bool)
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, sig...)
+		<-sigint
+
+		closeSig <- true
+	}()
+	return closeSig
 }

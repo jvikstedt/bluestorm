@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"os/signal"
 
 	"github.com/jvikstedt/bluestorm"
 	"github.com/jvikstedt/bluestorm/network"
@@ -48,14 +47,5 @@ func main() {
 		},
 	}
 
-	closeSig := make(chan bool)
-	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
-
-		closeSig <- true
-	}()
-
-	bluestorm.Run(closeSig, servers)
+	bluestorm.Run(bluestorm.CloseOnSignal(os.Interrupt), servers)
 }
