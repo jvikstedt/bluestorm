@@ -10,5 +10,5 @@ Projects that use Bluestorm:
 * [bluesnake] - Multiplayer snake game
 
 
+[demo]: https://github.com/jvikstedt/bluestorm/tree/master/cmd/demo
 [bluesnake]: https://github.com/jvikstedt/bluesnake
-[demo]: https://github.com/jvikstedt/bluestorm/cmd/demo
