@@ -1,12 +1,17 @@
 package hub
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/jvikstedt/bluestorm/network"
+)
 
 type UserID string
 type users map[UserID]*User
 
 type User struct {
-	id UserID // never modify
+	id    UserID // never modify
+	agent *network.Agent
 
 	mu   sync.RWMutex
 	room *Room

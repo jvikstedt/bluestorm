@@ -3,6 +3,8 @@ package hub
 import (
 	"fmt"
 	"sync"
+
+	"github.com/jvikstedt/bluestorm/network"
 )
 
 var DefaultRoomID RoomID = "default"
@@ -67,14 +69,17 @@ func (m *Manager) GetRoom(id RoomID) (*Room, error) {
 	return room, nil
 }
 
-func (m *Manager) UserToRoom(uid UserID, rid RoomID) error {
+// UserToRoom move user to room
+// agent has to be set only on initial join, otherwise leave as nil
+func (m *Manager) UserToRoom(uid UserID, rid RoomID, agent *network.Agent) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	user, ok := m.users[uid]
 	if !ok {
 		user = &User{
-			id: uid,
+			id:    uid,
+			agent: agent,
 		}
 		m.users[uid] = user
 	}
