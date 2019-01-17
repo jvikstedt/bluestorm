@@ -50,6 +50,16 @@ func (a *Agent) Processor() Processor {
 	return a.processor
 }
 
+func (a *Agent) WriteMsg(msg interface{}) error {
+	b, err := a.processor.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	a.conn.Write(b)
+
+	return nil
+}
+
 func (a *Agent) SetValue(key string, value interface{}) {
 	a.muMetadata.Lock()
 	defer a.muMetadata.Unlock()

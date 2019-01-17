@@ -20,7 +20,7 @@ func (g *Greet) Run(a *network.Agent, i interface{}) {
 	}
 
 	log.Printf("Greetings %s\n", greet.Name)
-	a.Conn.Write([]byte(`{"Greet": { "name": "Alice" }}`))
+	a.Conn().Write([]byte(`{"Greet": { "name": "Alice" }}`))
 }
 
 type Tester interface {
