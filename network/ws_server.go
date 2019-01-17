@@ -44,6 +44,7 @@ func (s *WSServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		id:        GenerateID(),
 		conn:      wsConn,
 		processor: s.Processor,
+		metadata:  make(map[string]interface{}),
 	}
 	if s.OnConnect != nil {
 		s.OnConnect(agent)
