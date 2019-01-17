@@ -10,8 +10,8 @@ type UserID string
 type users map[UserID]*User
 
 type User struct {
-	id    UserID // never modify
-	agent *network.Agent
+	id    UserID         // never modify
+	agent *network.Agent // never modify
 
 	mu   sync.RWMutex
 	room *Room
@@ -26,4 +26,8 @@ func (u *User) GetRoom() *Room {
 	defer u.mu.RUnlock()
 
 	return u.room
+}
+
+func (u *User) Agent() *network.Agent {
+	return u.agent
 }
