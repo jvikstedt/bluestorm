@@ -10,36 +10,35 @@ import (
 var DefaultRoomID RoomID = "default"
 
 type Manager struct {
-	mu sync.RWMutex
-	users
+	mu    sync.RWMutex
+	users Users
 	rooms
 }
 
 func NewManager() *Manager {
 	manager := &Manager{
-		users: make(users),
+		users: make(Users),
 		rooms: make(rooms),
 	}
 
-	manager.AddRoom(DefaultRoomID)
+	manager.rooms[DefaultRoomID] = &BaseRoom{
+		id:    DefaultRoomID,
+		users: make(Users),
+	}
 
 	return manager
 }
 
-func (m *Manager) AddRoom(id RoomID) error {
+func (m *Manager) AddRoom(room Room) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	_, ok := m.rooms[id]
+	_, ok := m.rooms[room.ID()]
 	if ok {
-		return fmt.Errorf("Could not create room %s, it already exists", id)
+		return fmt.Errorf("Could not create room %s, it already exists", room.ID())
 	}
 
-	m.rooms[id] = &Room{
-		id:    id,
-		users: make(users),
-	}
-
+	m.rooms[room.ID()] = room
 	return nil
 }
 
@@ -57,7 +56,7 @@ func (m *Manager) RemoveRoom(id RoomID) error {
 	return nil
 }
 
-func (m *Manager) GetRoom(id RoomID) (*Room, error) {
+func (m *Manager) GetRoom(id RoomID) (Room, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -86,9 +85,9 @@ func (m *Manager) UserToRoom(uid UserID, rid RoomID, agent *network.Agent) error
 
 	room, ok := m.rooms[rid]
 	if !ok {
-		room = &Room{
+		room = &BaseRoom{
 			id:    rid,
-			users: make(users),
+			users: make(Users),
 		}
 		m.rooms[rid] = room
 	}
@@ -102,16 +101,12 @@ func (m *Manager) UserToRoom(uid UserID, rid RoomID, agent *network.Agent) error
 
 	if user.room != nil {
 		// Remove user from old room
-		user.room.mu.Lock()
-		delete(user.room.users, uid)
-		user.room.mu.Unlock()
+		user.room.DeleteUser(uid)
 	}
 
 	// Add user to new room
 	user.room = room
-	room.mu.Lock()
-	room.users[uid] = user
-	room.mu.Unlock()
+	user.room.AddUser(user)
 
 	return nil
 }
@@ -129,14 +124,7 @@ func (m *Manager) RemoveUser(uid UserID) error {
 	defer user.mu.Unlock()
 
 	if user.room != nil {
-		user.room.mu.Lock()
-		delete(user.room.users, uid)
-
-		// Delete room if there is no longer users
-		if len(user.room.users) == 0 && user.room.id != DefaultRoomID {
-			delete(m.rooms, user.room.id)
-		}
-		user.room.mu.Unlock()
+		user.room.DeleteUser(uid)
 	}
 
 	delete(m.users, uid)

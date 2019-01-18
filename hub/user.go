@@ -7,21 +7,21 @@ import (
 )
 
 type UserID string
-type users map[UserID]*User
+type Users map[UserID]*User
 
 type User struct {
 	id    UserID         // never modify
 	agent *network.Agent // never modify
 
 	mu   sync.RWMutex
-	room *Room
+	room Room
 }
 
 func (u *User) ID() UserID {
 	return u.id
 }
 
-func (u *User) GetRoom() *Room {
+func (u *User) GetRoom() Room {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 

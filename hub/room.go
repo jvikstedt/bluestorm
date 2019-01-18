@@ -4,27 +4,62 @@ import (
 	"fmt"
 	"log"
 	"sync"
+
+	"github.com/jvikstedt/bluestorm/network"
 )
 
-type RoomID string
-type rooms map[RoomID]*Room
-
-type Room struct {
-	id RoomID // never modify
-
-	mu sync.RWMutex
-	users
+type Room interface {
+	ID() RoomID
+	DeleteUser(uid UserID)
+	AddUser(user *User)
+	GetUsers() Users
+	GetUserByID(uid UserID) (*User, error)
+	BroadcastExceptOne(uid UserID, msg interface{})
+	Broadcast(msg interface{})
+	NewMsg(agent *network.Agent, msg interface{})
 }
 
-func (r *Room) ID() RoomID {
+type RoomID string
+type rooms map[RoomID]Room
+
+type BaseRoom struct {
+	id RoomID // never modify
+
+	mu    sync.RWMutex
+	users Users
+}
+
+func NewBaseRoom(id RoomID) *BaseRoom {
+	return &BaseRoom{
+		id:    id,
+		users: make(Users),
+	}
+}
+
+func (r *BaseRoom) ID() RoomID {
 	return r.id
 }
 
-func (r *Room) GetUsers() users {
+func (r *BaseRoom) DeleteUser(uid UserID) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.users, uid)
+}
+
+func (r *BaseRoom) AddUser(user *User) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.users == nil {
+		r.users = make(Users)
+	}
+	r.users[user.id] = user
+}
+
+func (r *BaseRoom) GetUsers() Users {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	copyUsers := make(users)
+	copyUsers := make(Users)
 	for k, v := range r.users {
 		copyUsers[k] = v
 	}
@@ -32,7 +67,19 @@ func (r *Room) GetUsers() users {
 	return copyUsers
 }
 
-func (r *Room) GetUserByID(uid UserID) (*User, error) {
+func (r *BaseRoom) GetUsersWithRead(callback func(Users)) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	callback(r.users)
+}
+
+func (r *BaseRoom) GetUsersWithReadWrite(callback func(Users)) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	callback(r.users)
+}
+
+func (r *BaseRoom) GetUserByID(uid UserID) (*User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -44,7 +91,11 @@ func (r *Room) GetUserByID(uid UserID) (*User, error) {
 	return u, nil
 }
 
-func (r *Room) Broadcast(msg interface{}) {
+func (r *BaseRoom) NewMsg(agent *network.Agent, msg interface{}) {
+	log.Printf("New message from user %s, not handled\n", agent.ID())
+}
+
+func (r *BaseRoom) Broadcast(msg interface{}) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -55,7 +106,7 @@ func (r *Room) Broadcast(msg interface{}) {
 	}
 }
 
-func (r *Room) BroadcastExceptOne(uid UserID, msg interface{}) {
+func (r *BaseRoom) BroadcastExceptOne(uid UserID, msg interface{}) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
