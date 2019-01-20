@@ -60,18 +60,6 @@ func (r *BaseRoom) GetUsers() Users {
 	return copyUsers
 }
 
-func (r *BaseRoom) GetUsersWithRead(callback func(Users)) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	callback(r.users)
-}
-
-func (r *BaseRoom) GetUsersWithReadWrite(callback func(Users)) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	callback(r.users)
-}
-
 func (r *BaseRoom) GetUserByID(uid UserID) (User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
