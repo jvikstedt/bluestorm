@@ -4,9 +4,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-
-	"github.com/jvikstedt/bluestorm/hub"
-	"github.com/jvikstedt/bluestorm/network"
 )
 
 // Server specifies required functions for the server
@@ -45,32 +42,4 @@ func CloseOnSignal(sig ...os.Signal) chan bool {
 		closeSig <- true
 	}()
 	return closeSig
-}
-
-func OnConnectHelper(hubManager *hub.Manager, defaultRoomID hub.RoomID) func(*network.Agent) {
-	return func(agent *network.Agent) {
-		log.Printf("Agent connectedted %s\n", agent.ID())
-		defaultRoom, err := hubManager.GetRoom(defaultRoomID)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		if err := hubManager.UserToRoom(hub.UserID(agent.ID()), defaultRoomID, agent); err != nil {
-			log.Println(err)
-			agent.Conn().Close()
-			return
-		}
-
-		agent.SetValue("room", defaultRoom)
-	}
-}
-
-func OnDisconnectHelper(hubManager *hub.Manager) func(*network.Agent) {
-	return func(agent *network.Agent) {
-		log.Printf("Agent disconnected %s\n", agent.ID())
-		if err := hubManager.RemoveUser(hub.UserID(agent.ID())); err != nil {
-			log.Println(err)
-		}
-	}
 }

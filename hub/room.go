@@ -4,19 +4,12 @@ import (
 	"fmt"
 	"log"
 	"sync"
-
-	"github.com/jvikstedt/bluestorm/network"
 )
 
 type Room interface {
 	ID() RoomID
-	DeleteUser(uid UserID)
-	AddUser(user *User)
-	GetUsers() Users
-	GetUserByID(uid UserID) (*User, error)
-	BroadcastExceptOne(uid UserID, msg interface{})
-	Broadcast(msg interface{})
-	NewMsg(agent *network.Agent, msg interface{})
+	deleteUser(uid UserID)
+	addUser(user User)
 }
 
 type RoomID string
@@ -40,19 +33,19 @@ func (r *BaseRoom) ID() RoomID {
 	return r.id
 }
 
-func (r *BaseRoom) DeleteUser(uid UserID) {
+func (r *BaseRoom) deleteUser(uid UserID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.users, uid)
 }
 
-func (r *BaseRoom) AddUser(user *User) {
+func (r *BaseRoom) addUser(user User) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.users == nil {
 		r.users = make(Users)
 	}
-	r.users[user.id] = user
+	r.users[user.ID()] = user
 }
 
 func (r *BaseRoom) GetUsers() Users {
@@ -79,7 +72,7 @@ func (r *BaseRoom) GetUsersWithReadWrite(callback func(Users)) {
 	callback(r.users)
 }
 
-func (r *BaseRoom) GetUserByID(uid UserID) (*User, error) {
+func (r *BaseRoom) GetUserByID(uid UserID) (User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -91,16 +84,12 @@ func (r *BaseRoom) GetUserByID(uid UserID) (*User, error) {
 	return u, nil
 }
 
-func (r *BaseRoom) NewMsg(agent *network.Agent, msg interface{}) {
-	log.Printf("New message from user %s, not handled\n", agent.ID())
-}
-
 func (r *BaseRoom) Broadcast(msg interface{}) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	for _, user := range r.users {
-		if err := user.agent.WriteMsg(msg); err != nil {
+		if err := user.WriteMsg(msg); err != nil {
 			log.Println(err)
 		}
 	}
@@ -111,10 +100,10 @@ func (r *BaseRoom) BroadcastExceptOne(uid UserID, msg interface{}) {
 	defer r.mu.RUnlock()
 
 	for _, user := range r.users {
-		if user.id == uid {
+		if user.ID() == uid {
 			continue
 		}
-		if err := user.agent.WriteMsg(msg); err != nil {
+		if err := user.WriteMsg(msg); err != nil {
 			log.Println(err)
 		}
 	}
